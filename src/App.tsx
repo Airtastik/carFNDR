@@ -53,6 +53,100 @@ const App: React.FC = () => {
       </header>
       
       <main className="App-main">
+        {/* Search Container - Now Above Video */}
+        <div className="search-container">
+          <div className="search-header">
+            <button onClick={() => setShowSearch(!showSearch)} className="btn-toggle-search">
+              {showSearch ? '▲ Hide Search' : '▼ Show Search'}
+            </button>
+          </div>
+
+          {showSearch && (
+            <div className="search-content">
+              <div className="search-toggle">
+                <button
+                  className={`toggle-btn ${searchMode === 'simple' ? 'active' : ''}`}
+                  onClick={() => setSearchMode('simple')}
+                >
+                  Simple
+                </button>
+                <button
+                  className={`toggle-btn ${searchMode === 'advanced' ? 'active' : ''}`}
+                  onClick={() => setSearchMode('advanced')}
+                >
+                  Advanced
+                </button>
+              </div>
+
+              {searchMode === 'simple' ? (
+                <div className="simple-search">
+                  <div className="search-field">
+                    <label>Make</label>
+                    <select value={make} onChange={(e) => setMake(e.target.value)}>
+                      <option value="">Select Make</option>
+                      {makes.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="search-field">
+                    <label>Model</label>
+                    <select value={model} onChange={(e) => setModel(e.target.value)}>
+                      <option value="">Select Model</option>
+                      {models.map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="search-field">
+                    <label>Color</label>
+                    <select value={color} onChange={(e) => setColor(e.target.value)}>
+                      <option value="">Select Color</option>
+                      {colors.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="search-field">
+                    <label>License Plate</label>
+                    <input
+                      type="text"
+                      value={licensePlate}
+                      onChange={(e) => setLicensePlate(e.target.value)}
+                      placeholder="Enter license plate"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="advanced-search">
+                  <div className="search-field">
+                    <label>Advanced Search Query</label>
+                    <textarea
+                      value={advancedSearch}
+                      onChange={(e) => setAdvancedSearch(e.target.value)}
+                      placeholder="Enter advanced search query..."
+                      rows={4}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="search-actions">
+                <button onClick={handleInsertClick} className="btn-insert">
+                  Insert File
+                </button>
+                <button onClick={handleSearch} className="btn-execute-search">
+                  Execute Search
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Media Container - Now Below Search */}
         <div className="media-container">
           {mediaFile ? (
             mediaType === 'image' ? (
@@ -67,100 +161,13 @@ const App: React.FC = () => {
           )}
         </div>
 
-        <div className="controls">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelect}
-            accept="image/*,video/*"
-            style={{ display: 'none' }}
-          />
-          <button onClick={handleInsertClick} className="btn-insert">
-            Insert File
-          </button>
-          <button onClick={() => setShowSearch(!showSearch)} className="btn-search">
-            {showSearch ? 'Hide Search' : 'Search'}
-          </button>
-        </div>
-
-        {showSearch && (
-          <div className="search-container">
-            <div className="search-toggle">
-              <button
-                className={`toggle-btn ${searchMode === 'simple' ? 'active' : ''}`}
-                onClick={() => setSearchMode('simple')}
-              >
-                Simple
-              </button>
-              <button
-                className={`toggle-btn ${searchMode === 'advanced' ? 'active' : ''}`}
-                onClick={() => setSearchMode('advanced')}
-              >
-                Advanced
-              </button>
-            </div>
-
-            {searchMode === 'simple' ? (
-              <div className="simple-search">
-                <div className="search-field">
-                  <label>Make</label>
-                  <select value={make} onChange={(e) => setMake(e.target.value)}>
-                    <option value="">Select Make</option>
-                    {makes.map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="search-field">
-                  <label>Model</label>
-                  <select value={model} onChange={(e) => setModel(e.target.value)}>
-                    <option value="">Select Model</option>
-                    {models.map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="search-field">
-                  <label>Color</label>
-                  <select value={color} onChange={(e) => setColor(e.target.value)}>
-                    <option value="">Select Color</option>
-                    {colors.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="search-field">
-                  <label>License Plate</label>
-                  <input
-                    type="text"
-                    value={licensePlate}
-                    onChange={(e) => setLicensePlate(e.target.value)}
-                    placeholder="Enter license plate"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="advanced-search">
-                <div className="search-field">
-                  <label>Advanced Search Query</label>
-                  <textarea
-                    value={advancedSearch}
-                    onChange={(e) => setAdvancedSearch(e.target.value)}
-                    placeholder="Enter advanced search query..."
-                    rows={4}
-                  />
-                </div>
-              </div>
-            )}
-
-            <button onClick={handleSearch} className="btn-execute-search">
-              Execute Search
-            </button>
-          </div>
-        )}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept="image/*,video/*"
+          style={{ display: 'none' }}
+        />
       </main>
     </div>
   );

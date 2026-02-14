@@ -1,6 +1,6 @@
 .App {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #d5980a 0%, #764ba2 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -30,88 +30,46 @@
   padding: 2rem;
 }
 
-/* Media Container */
-.media-container {
-  background: #1a1a1a;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  min-height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.media-display {
-  width: 100%;
-  height: auto;
-  max-height: 500px;
-  object-fit: contain;
-}
-
-.media-placeholder {
-  color: #666;
-  font-size: 1.2rem;
-  text-align: center;
-  padding: 4rem;
-}
-
-/* Controls */
-.controls {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  justify-content: center;
-}
-
-.btn-insert,
-.btn-search {
-  padding: 0.875rem 2rem;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.btn-insert {
-  background: #4CAF50;
-  color: white;
-}
-
-.btn-insert:hover {
-  background: #45a049;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
-}
-
-.btn-search {
-  background: #2196F3;
-  color: white;
-}
-
-.btn-search:hover {
-  background: #0b7dda;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
-}
-
-/* Search Container */
+/* Search Container - Now at top */
 .search-container {
   background: white;
   border-radius: 12px;
-  padding: 2rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.search-header {
+  background: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.btn-toggle-search {
+  width: 100%;
+  padding: 1rem;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #667eea;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+}
+
+.btn-toggle-search:hover {
+  background: #e9ecef;
+}
+
+.search-content {
+  padding: 2rem;
   animation: slideDown 0.3s ease-out;
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
@@ -202,28 +160,76 @@
   min-height: 100px;
 }
 
-/* Execute Search Button */
+/* Search Actions (Buttons inside container) */
+.search-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-insert,
 .btn-execute-search {
-  width: 100%;
-  padding: 1rem;
-  background: #667eea;
-  color: white;
+  flex: 1;
+  padding: 0.875rem 2rem;
   border: none;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-insert {
+  background: #4CAF50;
+  color: white;
+}
+
+.btn-insert:hover {
+  background: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-execute-search {
+  background: #667eea;
+  color: white;
 }
 
 .btn-execute-search:hover {
   background: #5568d3;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.btn-execute-search:active {
+.btn-execute-search:active,
+.btn-insert:active {
   transform: translateY(0);
+}
+
+/* Media Container - Now below search */
+.media-container {
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.media-display {
+  width: 100%;
+  height: auto;
+  max-height: 500px;
+  object-fit: contain;
+}
+
+.media-placeholder {
+  color: #666;
+  font-size: 1.2rem;
+  text-align: center;
+  padding: 4rem;
 }
 
 /* Responsive */
@@ -232,16 +238,20 @@
     padding: 1rem;
   }
 
-  .controls {
+  .search-actions {
     flex-direction: column;
   }
 
   .btn-insert,
-  .btn-search {
+  .btn-execute-search {
     width: 100%;
   }
 
   .media-container {
     min-height: 250px;
+  }
+
+  .search-content {
+    padding: 1.5rem;
   }
 }
