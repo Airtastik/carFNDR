@@ -1,0 +1,9 @@
+a = good
+b = bad
+c = good
+d = good
+e = bad
+f = bad
+g = ok
+h = bad
+i = good
