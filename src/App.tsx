@@ -1,4 +1,3 @@
-import { API } from "aws-amplify";
 import React, { useState, useRef, useEffect } from "react";
 import "./App.css";
 
@@ -84,17 +83,15 @@ const App: React.FC = () => {
       setIsSearchingCars(true);
 
       try {
-        const response = await API.post('proxyFunction', '/', {
-          body: {
-            service: 'car',
-            endpoint: 'makes',
-            query: makeInput
-          }
-        });
+        const params = new URLSearchParams();
+        params.append("query", makeInput);
 
-        if (response.status === "success") {
-          setUniqueMakes(response.makes);
-          setShowMakeSuggestions(response.makes.length > 0);
+        const response = await fetch(`http://127.0.0.1:8000/api/cars/makes?${params}`);
+        const data = await response.json();
+
+        if (data.status === "success") {
+          setUniqueMakes(data.makes);
+          setShowMakeSuggestions(data.makes.length > 0);
         }
       } catch (error) {
         console.error("Error searching makes:", error);
@@ -126,19 +123,17 @@ const App: React.FC = () => {
       setIsSearchingCars(true);
 
       try {
-        const response = await API.post('proxyFunction', '/', {
-          body: {
-            service: 'car',
-            endpoint: 'models',
-            make: make,
-            query: modelInput,
-            limit: '20'
-          }
-        });
+        const params = new URLSearchParams();
+        params.append("make", make);
+        params.append("query", modelInput);
+        params.append("limit", "20");
 
-        if (response.status === "success") {
-          setUniqueModels(response.models);
-          setShowModelSuggestions(response.models.length > 0);
+        const response = await fetch(`http://127.0.0.1:8000/api/cars/models?${params}`);
+        const data = await response.json();
+
+        if (data.status === "success") {
+          setUniqueModels(data.models);
+          setShowModelSuggestions(data.models.length > 0);
         }
       } catch (error) {
         console.error("Error searching models:", error);
@@ -233,7 +228,7 @@ const App: React.FC = () => {
         clearInterval(stepInterval);
         setCurrentStep("Analysis complete!");
       }
-    }, 600); 
+    }, 600);
 
     return stepInterval;
   };
@@ -247,11 +242,10 @@ const App: React.FC = () => {
 
       if (file.type.startsWith("image/")) {
         setMediaType("image");
-      } else if (file..startsWith("video/")) {
+      } else if (file.type.startsWith("video/")) {
         setMediaType("video");
       }
 
-      // Clear previous results when new file is selected
       setResult("");
       setScreenshot(null);
       setAnalysisSteps([]);
@@ -264,7 +258,6 @@ const App: React.FC = () => {
   };
 
   const handleSearch = async (): Promise<void> => {
-    // Validation
     if (!rawFile) {
       alert("Please insert a media file first.");
       return;
@@ -274,7 +267,6 @@ const App: React.FC = () => {
     setResult("");
     setScreenshot(null);
 
-    // Start simulated streaming steps
     const stepInterval = simulateAnalysisSteps();
 
     const formData = new FormData();
@@ -291,8 +283,6 @@ const App: React.FC = () => {
       });
 
       const data = await response.json();
-
-      // Clear interval once we get the response
       clearInterval(stepInterval);
 
       if (data.status === "success") {
@@ -357,7 +347,9 @@ const App: React.FC = () => {
 
               {searchMode === "simple" ? (
                 <div className="simple-search">
-                  <div className="search-field">
+                  <div
+                    className="search-field"
+                    ref={makeSuggestionsRef}>
                     <label>Make</label>
                     <div className="input-with-clear">
                       <input
@@ -607,12 +599,6 @@ const App: React.FC = () => {
                   src={screenshot}
                   alt="Car detection moment"
                   className="detection-image"
-                  onError={(e) => {
-                    console.error("Failed to load screenshot:", screenshot);
-                    const target = e.currentTarget as HTMLImageElement;
-                    target.style.border = "2px solid var(--border)";
-                    target.alt = "Failed to load image";
-                  }}
                 />
               </div>
             ) : (
