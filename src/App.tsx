@@ -47,9 +47,6 @@ const App: React.FC = () => {
   const stepsEndRef = useRef<HTMLDivElement>(null);
   const makeSuggestionsRef = useRef<HTMLDivElement>(null);
   const modelSuggestionsRef = useRef<HTMLDivElement>(null);
-  const modelInputRef = useRef<HTMLInputElement>(null);
-  const colorSelectRef = useRef<HTMLSelectElement>(null);
-  const licensePlateInputRef = useRef<HTMLInputElement>(null);
 
   const colors = ["Black", "White", "Silver", "Gray", "Red", "Blue", "Green", "Yellow", "Orange", "Brown"];
 
@@ -172,21 +169,7 @@ const App: React.FC = () => {
   };
 
   const handleMakeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // If no suggestions are showing, move to next field on Enter
-    if (!showMakeSuggestions || uniqueMakes.length === 0) {
-      if (e.key === "Enter" && makeInput.trim()) {
-        // Allow manual entry and move to next field
-        e.preventDefault();
-        setMake(makeInput.trim());
-        setShowMakeSuggestions(false);
-        // Blur current input, then focus next field
-        e.currentTarget.blur();
-        setTimeout(() => {
-          modelInputRef.current?.focus();
-        }, 0);
-      }
-      return;
-    }
+    if (!showMakeSuggestions || uniqueMakes.length === 0) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -194,16 +177,9 @@ const App: React.FC = () => {
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedMakeIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === "Enter") {
+    } else if (e.key === "Enter" && selectedMakeIndex >= 0) {
       e.preventDefault();
-      // If no item is selected with arrow keys, select the first one
-      const indexToSelect = selectedMakeIndex >= 0 ? selectedMakeIndex : 0;
-      handleMakeSelect(uniqueMakes[indexToSelect]);
-      // Blur current input to close suggestions, then focus next field
-      e.currentTarget.blur();
-      setTimeout(() => {
-        modelInputRef.current?.focus();
-      }, 0);
+      handleMakeSelect(uniqueMakes[selectedMakeIndex]);
     } else if (e.key === "Escape") {
       setShowMakeSuggestions(false);
       setSelectedMakeIndex(-1);
@@ -211,21 +187,7 @@ const App: React.FC = () => {
   };
 
   const handleModelKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // If no suggestions are showing, move to next field on Enter
-    if (!showModelSuggestions || uniqueModels.length === 0) {
-      if (e.key === "Enter" && modelInput.trim()) {
-        // Allow manual entry and move to next field
-        e.preventDefault();
-        setModel(modelInput.trim());
-        setShowModelSuggestions(false);
-        // Blur current input, then focus next field
-        e.currentTarget.blur();
-        setTimeout(() => {
-          colorSelectRef.current?.focus();
-        }, 0);
-      }
-      return;
-    }
+    if (!showModelSuggestions || uniqueModels.length === 0) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -233,16 +195,9 @@ const App: React.FC = () => {
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setSelectedModelIndex((prev) => (prev > 0 ? prev - 1 : -1));
-    } else if (e.key === "Enter") {
+    } else if (e.key === "Enter" && selectedModelIndex >= 0) {
       e.preventDefault();
-      // If no item is selected with arrow keys, select the first one
-      const indexToSelect = selectedModelIndex >= 0 ? selectedModelIndex : 0;
-      handleModelSelect(uniqueModels[indexToSelect]);
-      // Blur current input to close suggestions, then focus next field
-      e.currentTarget.blur();
-      setTimeout(() => {
-        colorSelectRef.current?.focus();
-      }, 0);
+      handleModelSelect(uniqueModels[selectedModelIndex]);
     } else if (e.key === "Escape") {
       setShowModelSuggestions(false);
       setSelectedModelIndex(-1);
@@ -409,9 +364,7 @@ const App: React.FC = () => {
                         type="text"
                         value={makeInput}
                         onChange={(e) => setMakeInput(e.target.value)}
-                        onFocus={() => {
-                          // Don't auto-show suggestions on focus, let user start typing
-                        }}
+                        onFocus={() => makeInput.length >= 1 && setShowMakeSuggestions(true)}
                         onKeyDown={handleMakeKeyDown}
                         placeholder="Type to search makes..."
                         disabled={isLoading}
@@ -459,7 +412,6 @@ const App: React.FC = () => {
                     ref={modelSuggestionsRef}>
                     <label>Model {make && <span className="field-hint">for {make}</span>}</label>
                     <input
-                      ref={modelInputRef}
                       type="text"
                       value={modelInput}
                       onChange={(e) => setModelInput(e.target.value)}
@@ -469,7 +421,7 @@ const App: React.FC = () => {
                           alert("Please select a Make first");
                           return;
                         }
-                        // Don't auto-show suggestions on focus, let user start typing
+                        if (modelInput.length >= 1) setShowModelSuggestions(true);
                       }}
                       placeholder={make ? `Type to search ${make} models...` : "Select a make first"}
                       disabled={isLoading || !make}
@@ -502,7 +454,6 @@ const App: React.FC = () => {
                   <div className="search-field">
                     <label>Color</label>
                     <select
-                      ref={colorSelectRef}
                       value={color}
                       onChange={(e) => setColor(e.target.value)}
                       disabled={isLoading}>
@@ -520,7 +471,6 @@ const App: React.FC = () => {
                   <div className="search-field">
                     <label>License Plate</label>
                     <input
-                      ref={licensePlateInputRef}
                       type="text"
                       value={licensePlate}
                       onChange={(e) => setLicensePlate(e.target.value)}
@@ -562,7 +512,7 @@ const App: React.FC = () => {
               </div>
 
               {/* Search Summary */}
-              {searchMode === "simple" && (make || model || color || licensePlate) && (
+              {(make || model || color || licensePlate) && (
                 <div className="search-summary">
                   <strong>Searching for:</strong>
                   <div className="search-criteria">
@@ -570,14 +520,6 @@ const App: React.FC = () => {
                     {make && <span className="criterion">{make}</span>}
                     {model && <span className="criterion">{model}</span>}
                     {licensePlate && <span className="criterion">Plate: {licensePlate}</span>}
-                  </div>
-                </div>
-              )}
-              {searchMode === "advanced" && advancedSearch && (
-                <div className="search-summary">
-                  <strong>Advanced Query:</strong>
-                  <div className="search-criteria">
-                    <span className="criterion">{advancedSearch.length > 100 ? advancedSearch.substring(0, 100) + "..." : advancedSearch}</span>
                   </div>
                 </div>
               )}
