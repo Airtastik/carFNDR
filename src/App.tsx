@@ -363,7 +363,7 @@ const App: React.FC = () => {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Media Search App</h1>
+        <h1>CarFNDR</h1>
         <p>Upload and search vehicle footage</p>
       </header>
 
