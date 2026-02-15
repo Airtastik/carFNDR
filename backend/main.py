@@ -1,79 +1,112 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import os
 import time
 from twelvelabs import TwelveLabs
-import os
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=".env")
+load_dotenv()
 
+app = Flask(__name__)
+CORS(app)
 
-# 1. Initialize the client
+# Initialize Twelve Labs
 client = TwelveLabs(api_key=os.getenv("TWELVE_KEY"))
 
-# 2. Create an index
-# An index is a container for organizing your video content
-index_name = f"index_{int(time.time())}"  # This will create a unique name using the current timestamp
+@app.route('/api/search', methods=['POST'])
+def search_media():
+    # 1. Get Data from React
+    search_mode = request.form.get('searchMode')
+    file = request.files.get('media')
+    
+    # 2. Logic to determine the prompt (Advanced vs Simple)
+    if search_mode == 'advanced':
+        # If user typed in the textarea, use that exactly
+        user_prompt = request.form.get('advancedQuery')
+        search_query = user_prompt 
+    else:
+        # If simple, build the string from dropdowns
+        make = request.form.get('make', 'unknown')
+        model = request.form.get('model', 'unknown')
+        color = request.form.get('color', 'unknown')
+        user_prompt = f"Analyze the video completely. Is there a {color} {make} {model}?"
+        search_query = f"a {color} {make} {model}"
 
-# 2. Create an index
-index = client.indexes.create(
-    index_name=index_name,
-    models=[{"model_name": "pegasus1.2", "model_options": ["visual", "audio"]}]
-)
+    if not file:
+        return jsonify({"status": "error", "message": "No file uploaded"}), 400
 
-if not index.id:
-    raise RuntimeError("Failed to create an index.")
-print(f"Created index: id={index.id}")
+    # Save file temporarily
+    temp_path = os.path.join(os.getcwd(), file.filename)
+    file.save(temp_path)
 
-# 3. Upload file
-asset = client.assets.create(
-    method="direct",
-    file=open("./videos/i.mp4", "rb") # Use direct links to raw media files. Video hosting platforms and cloud storage sharing links are not supported
+    try:
+        # 3. Create Index (Using BOTH Pegasus for text and Marengo for screenshots)
+        index = client.indexes.create(
+            index_name=f"index_{int(time.time())}",
+            models=[
+                {"model_name": "pegasus1.2", "model_options": ["visual", "audio"]},
+                {"model_name": "marengo2.7", "model_options": ["visual", "audio"]}
+            ]
+        )
 
-    # Or use method="direct" and file=open("<PATH_TO_VIDEO_FILE>", "rb") to upload a file from the local file system
-)
-print(f"Created asset: id={asset.id}")
+        # 4. Upload and Index (Your main.py logic)
+        with open(temp_path, "rb") as video_file:
+            asset = client.assets.create(method="direct", file=video_file)
 
-# 4. Add your asset to an index
-indexed_asset = client.indexes.indexed_assets.create(
-    index_id=index.id,
-    asset_id=asset.id,
-    # enable_video_stream=True
-)
-print(f"Created indexed asset: id={indexed_asset.id}")
+        indexed_asset = client.indexes.indexed_assets.create(
+            index_id=index.id,
+            asset_id=asset.id
+        )
 
-# 5. Monitor the indexing process
-print("Waiting for indexing to complete.")
-while True:
-    indexed_asset = client.indexes.indexed_assets.retrieve(
-        index_id=index.id,
-        indexed_asset_id=indexed_asset.id
-    )
-    print(f"  Status={indexed_asset.status}")
+        # 5. Wait for indexing (Poll status)
+        print("Waiting for indexing to complete...")
+        while True:
+            indexed_asset = client.indexes.indexed_assets.retrieve(index.id, indexed_asset.id)
+            print(f"  Status={indexed_asset.status}")
+            if indexed_asset.status == "ready":
+                break
+            elif indexed_asset.status == "failed":
+                raise Exception("Twelve Labs Indexing failed")
+            time.sleep(5)
 
-    if indexed_asset.status == "ready":
-        print("Indexing complete!")
-        break
-    elif indexed_asset.status == "failed":
-        raise RuntimeError("Indexing failed")
+        # 6. Perform Analysis (Pegasus)
+        print(f"Analyzing with prompt: {user_prompt}")
+        text_stream = client.analyze_stream(
+            video_id=indexed_asset.id,
+            prompt=user_prompt
+        )
 
-    time.sleep(5)
+        full_response = ""
+        for text in text_stream:
+            if text.event_type == "text_generation":
+                full_response += text.text
 
-# 6. Perform open-ended analysis
-make = "Audi"
-model = "A5"
-color = "gray"
-text_stream = client.analyze_stream(
-    video_id=indexed_asset.id,
-    # prompt=f"Can you identify the vehicle in the video? Is it a {color} {make} {model}?"
-    prompt=f"Analyze the video completely. Is there a {color} {make} {model}?"
-    # temperature=0.2,
-    # max_tokens=1024,
-    # You can also use `response_format` to request structured JSON responses
-)
+        # 7. Get the Screenshot (Marengo Search)
+        search_results = client.search.query(
+            index_id=index.id,
+            query_text=search_query,
+            search_options=["visual"] 
+        )
 
-# 7. Process the results
-full_response = ""
-for text in text_stream:
-    if text.event_type == "text_generation":
-        full_response += text.text   # Add a space to avoid jumbled words
+        screenshot_url = None
+        # Use .data to access the results in the SyncPager
+        if search_results.data and len(search_results.data) > 0:
+            screenshot_url = search_results.data[0].thumbnail_url
 
-print(f"Full Response: {full_response}")
+        # Cleanup
+        os.remove(temp_path)
+
+        return jsonify({
+            "status": "success",
+            "analysis": full_response,
+            "screenshot": screenshot_url 
+        })
+
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        print(f"Error: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=8000)
