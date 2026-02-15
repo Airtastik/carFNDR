@@ -16,7 +16,6 @@ const App: React.FC = () => {
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null);
 
   // Search States
-  const [showSearch, setShowSearch] = useState<boolean>(true);
   const [searchMode, setSearchMode] = useState<"simple" | "advanced">("simple");
   const [advancedSearch, setAdvancedSearch] = useState<string>("");
   const [make, setMake] = useState<string>("");
@@ -34,6 +33,8 @@ const App: React.FC = () => {
   const [uniqueModels, setUniqueModels] = useState<string[]>([]);
   const [selectedMakeIndex, setSelectedMakeIndex] = useState<number>(-1);
   const [selectedModelIndex, setSelectedModelIndex] = useState<number>(-1);
+  const [makeInputHasFocus, setMakeInputHasFocus] = useState<boolean>(false);
+  const [modelInputHasFocus, setModelInputHasFocus] = useState<boolean>(false);
 
   // Analysis States
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -174,8 +175,7 @@ const App: React.FC = () => {
         e.preventDefault();
         setMake(makeInput.trim());
         setShowMakeSuggestions(false);
-        // Blur current input, then focus next field
-        e.currentTarget.blur();
+        // Focus next field
         setTimeout(() => {
           modelInputRef.current?.focus();
         }, 0);
@@ -194,8 +194,10 @@ const App: React.FC = () => {
       // If no item is selected with arrow keys, select the first one
       const indexToSelect = selectedMakeIndex >= 0 ? selectedMakeIndex : 0;
       handleMakeSelect(uniqueMakes[indexToSelect]);
-      // Blur current input to close suggestions, then focus next field
-      e.currentTarget.blur();
+      // Immediately hide suggestions and clear selection
+      setShowMakeSuggestions(false);
+      setSelectedMakeIndex(-1);
+      // Focus next field
       setTimeout(() => {
         modelInputRef.current?.focus();
       }, 0);
@@ -213,8 +215,7 @@ const App: React.FC = () => {
         e.preventDefault();
         setModel(modelInput.trim());
         setShowModelSuggestions(false);
-        // Blur current input, then focus next field
-        e.currentTarget.blur();
+        // Focus next field
         setTimeout(() => {
           colorSelectRef.current?.focus();
         }, 0);
@@ -233,8 +234,10 @@ const App: React.FC = () => {
       // If no item is selected with arrow keys, select the first one
       const indexToSelect = selectedModelIndex >= 0 ? selectedModelIndex : 0;
       handleModelSelect(uniqueModels[indexToSelect]);
-      // Blur current input to close suggestions, then focus next field
-      e.currentTarget.blur();
+      // Immediately hide suggestions and clear selection
+      setShowModelSuggestions(false);
+      setSelectedModelIndex(-1);
+      // Focus next field
       setTimeout(() => {
         colorSelectRef.current?.focus();
       }, 0);
@@ -366,215 +369,212 @@ const App: React.FC = () => {
 
       <main className="App-main">
         <div className="search-container">
-          <div className="search-header">
-            <button
-              onClick={() => setShowSearch(!showSearch)}
-              className="btn-toggle-search">
-              <span className="toggle-icon">{showSearch ? "▼" : "▶"}</span>
-              <span>{showSearch ? "Hide Search Panel" : "Show Search Panel"}</span>
-            </button>
-          </div>
+          <div className="search-content">
+            <div className="search-toggle">
+              <button
+                className={`toggle-btn ${searchMode === "simple" ? "active" : ""}`}
+                onClick={() => setSearchMode("simple")}>
+                Simple
+              </button>
+              <button
+                className={`toggle-btn ${searchMode === "advanced" ? "active" : ""}`}
+                onClick={() => setSearchMode("advanced")}>
+                Advanced
+              </button>
+            </div>
 
-          {showSearch && (
-            <div className="search-content">
-              <div className="search-toggle">
-                <button
-                  className={`toggle-btn ${searchMode === "simple" ? "active" : ""}`}
-                  onClick={() => setSearchMode("simple")}>
-                  Simple
-                </button>
-                <button
-                  className={`toggle-btn ${searchMode === "advanced" ? "active" : ""}`}
-                  onClick={() => setSearchMode("advanced")}>
-                  Advanced
-                </button>
-              </div>
-
-              {searchMode === "simple" ? (
-                <div className="simple-search">
-                  <div
-                    className="search-field"
-                    ref={makeSuggestionsRef}>
-                    <label>Make</label>
-                    <div className="input-with-clear">
-                      <input
-                        type="text"
-                        value={makeInput}
-                        onChange={(e) => setMakeInput(e.target.value)}
-                        onFocus={() => {
-                          // Don't auto-show suggestions on focus, let user start typing
-                        }}
-                        onKeyDown={handleMakeKeyDown}
-                        placeholder="Type to search makes..."
-                        disabled={isLoading}
-                        className="autocomplete-input"
-                      />
-                      {makeInput && (
-                        <button
-                          className="clear-button"
-                          onClick={() => {
-                            setMakeInput("");
-                            setMake("");
-                            setModelInput("");
-                            setModel("");
-                          }}
-                          type="button">
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                    {showMakeSuggestions && uniqueMakes.length > 0 && (
-                      <div className="suggestions-dropdown">
-                        {isSearchingCars && <div className="suggestions-loading">Searching...</div>}
-                        {uniqueMakes.map((makeName, index) => (
-                          <div
-                            key={index}
-                            className={`suggestion-item ${index === selectedMakeIndex ? "selected" : ""}`}
-                            onClick={() => handleMakeSelect(makeName)}
-                            onMouseEnter={() => setSelectedMakeIndex(index)}>
-                            <div className="suggestion-main">
-                              <strong>{makeName}</strong>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {makeInput.length >= 1 && !isSearchingCars && uniqueMakes.length === 0 && (
-                      <div className="suggestions-dropdown">
-                        <div className="no-results">No makes found for "{makeInput}"</div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div
-                    className="search-field"
-                    ref={modelSuggestionsRef}>
-                    <label>Model {make && <span className="field-hint">for {make}</span>}</label>
+            {searchMode === "simple" ? (
+              <div className="simple-search">
+                <div
+                  className="search-field"
+                  ref={makeSuggestionsRef}>
+                  <label>Make</label>
+                  <div className="input-with-clear">
                     <input
-                      ref={modelInputRef}
                       type="text"
-                      value={modelInput}
-                      onChange={(e) => setModelInput(e.target.value)}
-                      onKeyDown={handleModelKeyDown}
+                      value={makeInput}
+                      onChange={(e) => setMakeInput(e.target.value)}
                       onFocus={() => {
-                        if (!make) {
-                          alert("Please select a Make first");
-                          return;
-                        }
-                        // Don't auto-show suggestions on focus, let user start typing
+                        setMakeInputHasFocus(true);
                       }}
-                      placeholder={make ? `Type to search ${make} models...` : "Select a make first"}
-                      disabled={isLoading || !make}
+                      onBlur={() => {
+                        // Delay to allow click on suggestion to register
+                        setTimeout(() => setMakeInputHasFocus(false), 150);
+                      }}
+                      onKeyDown={handleMakeKeyDown}
+                      placeholder="Type to search makes..."
+                      disabled={isLoading}
                       className="autocomplete-input"
                     />
-                    {!make && modelInput.length === 0 && <div className="field-hint-message">⬆ Select a make first to search models</div>}
-                    {showModelSuggestions && uniqueModels.length > 0 && (
-                      <div className="suggestions-dropdown">
-                        {isSearchingCars && <div className="suggestions-loading">Searching...</div>}
-                        {uniqueModels.map((modelName, index) => (
-                          <div
-                            key={index}
-                            className={`suggestion-item ${index === selectedModelIndex ? "selected" : ""}`}
-                            onClick={() => handleModelSelect(modelName)}
-                            onMouseEnter={() => setSelectedModelIndex(index)}>
-                            <div className="suggestion-main">
-                              <strong>{modelName}</strong>
-                            </div>
+                    {makeInput && (
+                      <button
+                        className="clear-button"
+                        onClick={() => {
+                          setMakeInput("");
+                          setMake("");
+                          setModelInput("");
+                          setModel("");
+                        }}
+                        type="button">
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  {makeInputHasFocus && showMakeSuggestions && uniqueMakes.length > 0 && (
+                    <div className="suggestions-dropdown">
+                      {isSearchingCars && <div className="suggestions-loading">Searching...</div>}
+                      {uniqueMakes.map((makeName, index) => (
+                        <div
+                          key={index}
+                          className={`suggestion-item ${index === selectedMakeIndex ? "selected" : ""}`}
+                          onClick={() => handleMakeSelect(makeName)}
+                          onMouseEnter={() => setSelectedMakeIndex(index)}>
+                          <div className="suggestion-main">
+                            <strong>{makeName}</strong>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                    {make && modelInput.length > 0 && !isSearchingCars && uniqueModels.length === 0 && showModelSuggestions && (
-                      <div className="suggestions-dropdown">
-                        <div className="no-results">No models found for "{modelInput}"</div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="search-field">
-                    <label>Color</label>
-                    <select
-                      ref={colorSelectRef}
-                      value={color}
-                      onChange={(e) => setColor(e.target.value)}
-                      disabled={isLoading}>
-                      <option value="">Select Color</option>
-                      {colors.map((c) => (
-                        <option
-                          key={c}
-                          value={c}>
-                          {c}
-                        </option>
+                        </div>
                       ))}
-                    </select>
-                  </div>
-
-                  <div className="search-field">
-                    <label>License Plate</label>
-                    <input
-                      ref={licensePlateInputRef}
-                      type="text"
-                      value={licensePlate}
-                      onChange={(e) => setLicensePlate(e.target.value)}
-                      placeholder="Enter license plate"
-                      disabled={isLoading}
-                    />
-                  </div>
+                    </div>
+                  )}
+                  {makeInputHasFocus && makeInput.length >= 1 && !isSearchingCars && uniqueMakes.length === 0 && (
+                    <div className="suggestions-dropdown">
+                      <div className="no-results">No makes found for "{makeInput}"</div>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="advanced-search">
-                  <div className="search-field">
-                    <label>Advanced Search Query</label>
-                    <textarea
-                      value={advancedSearch}
-                      onChange={(e) => setAdvancedSearch(e.target.value)}
-                      placeholder="Enter advanced search query..."
-                      rows={4}
-                      disabled={isLoading}
-                    />
-                  </div>
-                </div>
-              )}
 
-              <div className="search-actions">
-                <button
-                  onClick={handleInsertClick}
-                  className="btn-insert"
-                  disabled={isLoading}>
-                  <span className="btn-icon">📁</span>
-                  <span>Insert File</span>
-                </button>
-                <button
-                  onClick={handleSearch}
-                  className="btn-execute-search"
-                  disabled={isLoading || !rawFile}>
-                  <span className="btn-icon">🔍</span>
-                  <span>{isLoading ? "Analyzing..." : "Execute Search"}</span>
-                </button>
+                <div
+                  className="search-field"
+                  ref={modelSuggestionsRef}>
+                  <label>Model {make && <span className="field-hint">for {make}</span>}</label>
+                  <input
+                    ref={modelInputRef}
+                    type="text"
+                    value={modelInput}
+                    onChange={(e) => setModelInput(e.target.value)}
+                    onKeyDown={handleModelKeyDown}
+                    onFocus={() => {
+                      if (!make) {
+                        alert("Please select a Make first");
+                        return;
+                      }
+                      setModelInputHasFocus(true);
+                    }}
+                    onBlur={() => {
+                      // Delay to allow click on suggestion to register
+                      setTimeout(() => setModelInputHasFocus(false), 150);
+                    }}
+                    placeholder={make ? `Type to search ${make} models...` : "Select a make first"}
+                    disabled={isLoading || !make}
+                    className="autocomplete-input"
+                  />
+                  {!make && modelInput.length === 0 && <div className="field-hint-message">⬆ Select a make first to search models</div>}
+                  {modelInputHasFocus && showModelSuggestions && uniqueModels.length > 0 && (
+                    <div className="suggestions-dropdown">
+                      {isSearchingCars && <div className="suggestions-loading">Searching...</div>}
+                      {uniqueModels.map((modelName, index) => (
+                        <div
+                          key={index}
+                          className={`suggestion-item ${index === selectedModelIndex ? "selected" : ""}`}
+                          onClick={() => handleModelSelect(modelName)}
+                          onMouseEnter={() => setSelectedModelIndex(index)}>
+                          <div className="suggestion-main">
+                            <strong>{modelName}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {modelInputHasFocus && make && modelInput.length > 0 && !isSearchingCars && uniqueModels.length === 0 && showModelSuggestions && (
+                    <div className="suggestions-dropdown">
+                      <div className="no-results">No models found for "{modelInput}"</div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="search-field">
+                  <label>Color</label>
+                  <select
+                    ref={colorSelectRef}
+                    value={color}
+                    onChange={(e) => setColor(e.target.value)}
+                    disabled={isLoading}>
+                    <option value="">Select Color</option>
+                    {colors.map((c) => (
+                      <option
+                        key={c}
+                        value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="search-field">
+                  <label>License Plate</label>
+                  <input
+                    ref={licensePlateInputRef}
+                    type="text"
+                    value={licensePlate}
+                    onChange={(e) => setLicensePlate(e.target.value)}
+                    placeholder="Enter license plate"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
+            ) : (
+              <div className="advanced-search">
+                <div className="search-field">
+                  <label>Advanced Search Query</label>
+                  <textarea
+                    value={advancedSearch}
+                    onChange={(e) => setAdvancedSearch(e.target.value)}
+                    placeholder="Enter advanced search query..."
+                    rows={4}
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            )}
 
-              {/* Search Summary */}
-              {searchMode === "simple" && (make || model || color || licensePlate) && (
-                <div className="search-summary">
-                  <strong>Searching for:</strong>
-                  <div className="search-criteria">
-                    {color && <span className="criterion">{color}</span>}
-                    {make && <span className="criterion">{make}</span>}
-                    {model && <span className="criterion">{model}</span>}
-                    {licensePlate && <span className="criterion">Plate: {licensePlate}</span>}
-                  </div>
-                </div>
-              )}
-              {searchMode === "advanced" && advancedSearch && (
-                <div className="search-summary">
-                  <strong>Advanced Query:</strong>
-                  <div className="search-criteria">
-                    <span className="criterion">{advancedSearch.length > 100 ? advancedSearch.substring(0, 100) + "..." : advancedSearch}</span>
-                  </div>
-                </div>
-              )}
+            <div className="search-actions">
+              <button
+                onClick={handleInsertClick}
+                className="btn-insert"
+                disabled={isLoading}>
+                <span className="btn-icon">📁</span>
+                <span>Insert File</span>
+              </button>
+              <button
+                onClick={handleSearch}
+                className="btn-execute-search"
+                disabled={isLoading || !rawFile}>
+                <span className="btn-icon">🔍</span>
+                <span>{isLoading ? "Analyzing..." : "Execute Search"}</span>
+              </button>
             </div>
-          )}
+
+            {/* Search Summary */}
+            {searchMode === "simple" && (make || model || color || licensePlate) && (
+              <div className="search-summary">
+                <strong>Searching for:</strong>
+                <div className="search-criteria">
+                  {color && <span className="criterion">{color}</span>}
+                  {make && <span className="criterion">{make}</span>}
+                  {model && <span className="criterion">{model}</span>}
+                  {licensePlate && <span className="criterion">Plate: {licensePlate}</span>}
+                </div>
+              </div>
+            )}
+            {searchMode === "advanced" && advancedSearch && (
+              <div className="search-summary">
+                <strong>Advanced Query:</strong>
+                <div className="search-criteria">
+                  <span className="criterion">{advancedSearch.length > 100 ? advancedSearch.substring(0, 100) + "..." : advancedSearch}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="media-container">
