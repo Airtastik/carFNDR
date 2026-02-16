@@ -2,6 +2,10 @@
 
 carFNDR is an AWS Amplify application that scans and notes footage or images for specified vehicles. Using the Twelve Labs AI API carFNDR can use a basic description, such as a make, model, or license plate, to find a car in a video or photo.
 
+
+<img width="1095" height="625" alt="Screenshot_2026-02-14_at_10 26 18_PM" src="https://github.com/user-attachments/assets/94f9da5c-8f2a-40f6-a627-71c7b9e177f3" />
+
+
 ## Features
 
 - ✅ Built with React 18 and TypeScript
